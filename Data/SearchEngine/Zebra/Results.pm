@@ -4,11 +4,9 @@ use Carp;
 use ZOOM;
 use XML::Simple;
 use Data::Dumper;
-use MARC::Record;
 use Moose;
-use Data::SearchEngine::Item;
-use Data::SearchEngine::Query;
 use Data::SearchEngine::Paginator;
+use Data::SearchEngine::Zebra::Item;
 
 extends 'Data::SearchEngine::Results';
 
@@ -17,6 +15,7 @@ use warnings;
 
 has query => ( is => 'rw', isa => 'Data::SearchEngine::Query' );
 has entries_per_page => ( is => 'rw', isa => 'Int');
+has _zoom_resultset =>( is => 'ro');
 
 sub BUILD {
     my $self = shift;
@@ -24,7 +23,7 @@ sub BUILD {
 }
 
 sub retrieve{
-    my ($self, $tmpresults, $zconn) = @_;
+    my ($self, $zconn) = @_;
     my $offset = $self->query->{"page"};
     $offset = 0 unless ($offset);
     
@@ -42,7 +41,7 @@ sub retrieve{
             
             # Items start
 			my $first_record = defined( $offset ) ? $offset+1 : 1;
-			my $hits = $tmpresults->size();
+			my $hits = $self->_zoom_resultset->size();
             $results->{pager} = Data::SearchEngine::Paginator->new(
 					               current_page => $offset,
 					               entries_per_page => $self->query->{"count"},
@@ -55,14 +54,10 @@ sub retrieve{
 			}
 
 			for my $j ( $first_record..$last_record ) {
-				my $record = $tmpresults->record( $j-1 )->raw(); # 0 indexed
-				my $_record = MARC::Record->new_from_usmarc($record);
-				my $field = $_record->field('999');
-	            my $item = Data::SearchEngine::Item->new(
-	                id      => $field->subfield('c'),
-	                score   => 0
+				my $record = $self->_zoom_resultset->record( $j-1 )->raw(); # 0 indexed
+	            my $item = Data::SearchEngine::Zebra::Item->new(
+	                record => $record
 	            );
-	            $item->set_value('record', $record);
 	            $results->add($item);
 			}
             # Items end
@@ -73,6 +68,11 @@ sub retrieve{
 
     return ($results);
 }
+
+sub hits {
+    my $self=shift;
+    return $self->_zoom_resultset->size();
+};
 
 1;
 
@@ -104,13 +104,19 @@ Number of entries per page.
 
 Returns a Data::SearchEngine::Results object from a ZOOM::Connection resultset
 
+=head2 hits
+
+Return the number of total hits of a resultset
+
 =head1 AUTHOR
 
 Juan Romay Sieira <juan.sieira@xercode.es>
+Henri-Damien Laurent <henridamien.laurent@biblibre.com>
 
 =head1 COPYRIGHT AND LICENSE
 
 This software is Copyright (c) 2012 by Xercode Media Software.
+This software is Copyright (c) 2012 by Biblibre.
 
 This is free software, licensed under:
 

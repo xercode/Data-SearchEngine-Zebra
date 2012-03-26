@@ -5,7 +5,7 @@ use ZOOM;
 use XML::Simple;
 use Data::Dumper;
 use Moose;
-use Data::SearchEngine::Query;
+use Data::SearchEngine::Zebra::Query;
 
 with 'Data::SearchEngine';
 
@@ -22,18 +22,19 @@ sub search {
 	$self->check_options();
 	
 	my $zconn = $self->zconn("biblio");
-	# Replace it with a Data::SearchEngine::Query (zoomized)....
-    my $zoom_query = new ZOOM::Query::CCL2RPN( $query, $zconn);
-    # Data::SearchEngine::Query
-    my $seq = Data::SearchEngine::Query->new(
-        page  => $page,
-        count => $count,
-        query => $query,
+
+    my $z_query = new Data::SearchEngine::Zebra::Query->new(
+                    zconn => $zconn,
+                    query => "ti=a",
+                    type => "CCL2RPN",
+                    page  => $page,
+                    count => $count,
+                    query => $query
     );
-    # 
-	my $tmpresults = $zconn->search( $zoom_query );
     
-    return ($tmpresults, $zconn, $seq);
+	my $tmpresults = $zconn->search( $z_query->_zoom_query );
+    
+    return ($tmpresults, $zconn, $z_query);
 }
 
 sub BUILD {
@@ -137,7 +138,7 @@ Return a connection to a Zebra server.
 Returns:
     ResultSet from ZOOM::Connection::search
     Connection to a Zebra server
-    Data::SearchEngine::Query object
+    Data::SearchEngine::Zebra::Query object
 
 =head2 check_options
 
@@ -146,10 +147,12 @@ Check if all the required options are set.
 =head1 AUTHOR
 
 Juan Romay Sieira <juan.sieira@xercode.es>
+Henri-Damien Laurent <henridamien.laurent@biblibre.com>
 
 =head1 COPYRIGHT AND LICENSE
 
 This software is Copyright (c) 2012 by Xercode Media Software.
+This software is Copyright (c) 2012 by Biblibre.
 
 This is free software, licensed under:
 
