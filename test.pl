@@ -10,6 +10,7 @@ my $zebra = Data::SearchEngine::Zebra->new();
 $zebra->set_default ("server", "biblio");
 $zebra->set_default ("async", 1);
 $zebra->set_default ("piggyback", 0);
+$zebra->set_default ("syntax", "xml");
 
 # ==========   TEST   ================================================
 

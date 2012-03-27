@@ -61,7 +61,7 @@ sub zconn {
 
     my $c        = $self->conf;
     my $name     = $self->get_default("server") eq 'biblio' ? 'biblioserver' : 'authorityserver';
-    my $syntax   = "usmarc" unless ($self->get_default("syntax"));
+    my $syntax   = $self->get_default("syntax") || "usmarc";
     my $host     = $c->{listen}->{$name}->{content};
     my $user     = $c->{serverinfo}->{$name}->{user};
     my $password = $c->{serverinfo}->{$name}->{password};
