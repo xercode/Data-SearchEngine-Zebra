@@ -4,7 +4,7 @@ use Modern::Perl;
 use Carp;
 use ZOOM;
 use XML::Simple;
-use MARC::Record;
+use Data::Dumper;
 
 use Moose;
 
@@ -14,8 +14,12 @@ has record => ( is => 'rw', isa => 'Str');
 
 sub BUILD{
     my $self=shift;
-    my $_record = MARC::Record->new_from_usmarc($self->record);
-    $self->id($_record->field('999')->subfield('c'));
+    my $record = eval{XMLin($self->record)};
+    if ($@){
+        croak "an error occured in decoding the xml record ".$self->record." :".$@;
+        return;
+    }
+    $self->id($record->{idzebra}->{localnumber});
 }
 
 1;
